@@ -27,6 +27,7 @@
 @property (nonatomic, assign) BOOL automaticallyRefreshesContents;
 @property (nonatomic, assign) BOOL hasRequestedAtLeastOneAd;
 @property (nonatomic, assign) UIInterfaceOrientation currentOrientation;
+@property (nonatomic, assign) BOOL appIsInBackground;
 
 - (void)loadAdWithURL:(NSURL *)URL;
 - (void)applicationWillEnterForeground;
@@ -110,6 +111,7 @@
 
 - (void)applicationWillEnterForeground
 {
+    self.appIsInBackground = NO;
     if (self.automaticallyRefreshesContents && self.hasRequestedAtLeastOneAd) {
         [self loadAdWithURL:nil];
     }
@@ -118,6 +120,7 @@
 - (void)applicationDidEnterBackground
 {
     [self pauseRefreshTimer];
+    self.appIsInBackground = YES;
 }
 
 - (void)pauseRefreshTimer
@@ -155,6 +158,12 @@
     self.requestingAdapterAdContentView = nil;
 
     [self.communicator cancel];
+    
+    if(self.appIsInBackground)
+    {
+        MPLogInfo(@"Banner view (%@) not loading due to app being in background", [self.delegate adUnitId]);
+        return;
+    }
 
     URL = (URL) ? URL : [MPAdServerURLBuilder URLWithAdUnitID:[self.delegate adUnitId]
                                                      keywords:[self.delegate keywords]
